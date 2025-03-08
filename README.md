@@ -29,14 +29,36 @@ Ensure you have the following installed:
    ```
 
 2. **Install SFML** (if not installed):
-   - On Ubuntu:
-     ```sh
-     sudo apt-get install libsfml-dev
-     ```
    - On Windows (Using vcpkg):
      ```sh
      vcpkg install sfml
      ```
+
+   - On macOS Installation Instructions:
+
+      1. **Install Homebrew** (if not installed):  
+         ```sh
+         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+         ```
+      
+      2. **Install SFML**:  
+         ```sh
+         brew install sfml
+         ```
+
+3. **Download Stockfish** from [Stockfish official site](https://stockfishchess.org/download/) and place it in the project directory.
+
+4. **Compile the Game**:  
+   ```sh
+   g++ main.cpp -o chess-game -lsfml-graphics -lsfml-window -lsfml-system
+   ```
+
+5. **Run the Game**:  
+   ```sh
+   ./chess-game
+   ```
+
+
 
 3. **Download Stockfish**:
    - Get the latest Stockfish binary from [official site](https://stockfishchess.org/download/).
