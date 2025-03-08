@@ -24,7 +24,7 @@ Ensure you have the following installed:
 ### Setup Instructions
 1. **Clone the Repository**:
    ```sh
-   git clone https://github.com/smaazmeer/chess-game.git](https://github.com/smaazmeer/OOP-PROJECT---CHESS-GAME.git
+   git clone https://github.com/smaazmeer/OOP-PROJECT---CHESS-GAME.git
    cd chess-game
    ```
 
