@@ -9,7 +9,6 @@ This is a GUI-based Chess game built in C++ featuring:
 ## Features
 - **Graphical User Interface (GUI)** for an interactive chess experience.
 - **Stockfish Integration** for AI-based opponent moves.
-- **Multiple AI Bots** with predefined difficulty settings.
 - **Smooth and Responsive Gameplay** with an intuitive interface.
 - **Legal Move Indication** to assist players during the game.
 - **Move History and Game Notation** for tracking gameplay.
