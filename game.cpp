@@ -7,6 +7,7 @@
 Game::Game() {
     currentTurn = WHITE;
     awaitingPromotion = false;
+    gameOver = false;
     loadTextures();
     initializeBoard();
 
@@ -16,7 +17,20 @@ Game::Game() {
     promotionText.setFillColor(sf::Color::White);
     promotionText.setString("Promote pawn to (Q/R/B/N):");
     promotionText.setPosition(520, 50);
+
+    gameOverText.setFont(font);
+    gameOverText.setCharacterSize(48);
+    gameOverText.setFillColor(sf::Color::Red);
+    gameOverText.setPosition(200, 250); // Center position
+    gameOverText.setString("Game Over!");
+    logFont.loadFromFile("arial.ttf");
+
+    
+
+ 
+ 
 }
+
 
 Game::~Game() {
     for (int y = 0; y < 8; ++y)
@@ -107,8 +121,8 @@ void Game::drawHighlights(sf::RenderWindow& window) {
     }
 }
 
-void Game::handleClick(int x, int y) {
-    if (awaitingPromotion) return;
+bool Game::handleClick(int x, int y) {
+    if (awaitingPromotion || gameOver) return false;
 
     static bool selected = false;
     static int sx, sy;
@@ -134,30 +148,89 @@ void Game::handleClick(int x, int y) {
             board[y][x] = piece;
             board[sy][sx] = nullptr;
             piece->hasMoved = true;
-
-            // Check promotion
+            if (piece->type == KING && std::abs(x - sx) == 2) {
+    int rookFromX = (x > sx) ? 7 : 0;
+    int rookToX = (x > sx) ? x - 1 : x + 1;
+    Piece* rook = board[sy][rookFromX];
+    board[sy][rookToX] = rook;
+    board[sy][rookFromX] = nullptr;
+    rook->hasMoved = true;
+}
+      addMoveToHistory(sx, sy, x, y, piece);
+            // Promotion
             if (piece->type == PAWN && (y == 0 || y == 7)) {
                 awaitingPromotion = true;
                 promotionPos = { x, y };
             } else {
                 switchTurn();
             }
+
+            // Checkmate
+            if (isCheckmate(currentTurn)) {
+                gameOver = true;
+            }
+
+            selected = false;
+            legalMoves.clear();
+            return true; // ? Valid move made
         }
+
         selected = false;
         legalMoves.clear();
     }
+
+    return false; // ? No move made
 }
+
+
 
 bool Game::isMoveLegal(Piece* selected, int sx, int sy, int dx, int dy) {
     if (!selected) return false;
     Piece* dest = board[dy][dx];
     if (dest && dest->color == selected->color) return false;
     if (!selected->isValidMove(sx, sy, dx, dy, board)) return false;
-    return true;
+
+    // --- Begin temporary simulation ---
+    Piece* temp = board[dy][dx];
+    board[dy][dx] = selected;
+    board[sy][sx] = nullptr;
+
+    bool inCheck = isKingInCheck(currentTurn);
+
+    // Revert
+    board[sy][sx] = selected;
+    board[dy][dx] = temp;
+
+    return !inCheck;
 }
+bool Game::isKingInCheck(Color c)  {
+    int kingX = -1, kingY = -1;
+    
+    // Find the king
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x)
+            if (board[y][x] && board[y][x]->type == KING && board[y][x]->color == c) {
+                kingX = x;
+                kingY = y;
+            }
+
+    if (kingX == -1 || kingY == -1) return true; // King not found (shouldn't happen)
+
+    // Check if any opposing piece can attack the king
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x)
+            if (board[y][x] && board[y][x]->color != c)
+                if (board[y][x]->isValidMove(x, y, kingX, kingY, board))
+                    return true;
+
+    return false;
+}
+
 
 void Game::switchTurn() {
     currentTurn = (currentTurn == WHITE) ? BLACK : WHITE;
+    
+
 }
 
 bool Game::isInsideBoard(int x, int y) {
@@ -206,6 +279,139 @@ void Game::drawPromotion(sf::RenderWindow& window) {
     if (awaitingPromotion) {
         window.draw(promotionText);
     }
+}
+bool Game::isCheckmate(Color color) {
+    // First, check if the king is in check
+    if (!isKingInCheck(color)) return false;
+
+    // Then, check if the player has any valid moves to get out of check
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            Piece* piece = board[y][x];
+            if (piece && piece->color == color) {
+                for (int dy = 0; dy < 8; ++dy) {
+                    for (int dx = 0; dx < 8; ++dx) {
+                        if (isMoveLegal(piece, x, y, dx, dy)) {
+                            return false; // There's at least one valid move
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true; // No valid moves and the king is in check -> checkmate
+}
+
+Color Game::getCurrentTurn() const { return currentTurn; }
+void Game::setGameOver(bool over) { gameOver = over; }
+bool Game::isGameOver() const { return gameOver; }
+bool Game::wasLastMoveCheckmate() {
+    return gameOver && !isKingInCheck(currentTurn); // gameOver triggered without check? then it's checkmate
+}
+
+std::string Game::positionToChessNotation(int x, int y) {
+    char file = 'a' + x;
+    char rank = '8' - y;
+    return std::string(1, file) + std::string(1, rank);
+}
+
+void Game::addMoveToHistory(int sx, int sy, int dx, int dy, Piece* movedPiece) {
+    std::string move = (currentTurn == WHITE ? "White: " : "Black: ");
+    move += positionToChessNotation(sx, sy) + " ? " + positionToChessNotation(dx, dy);
+    
+    sf::Text moveText;
+    moveText.setFont(logFont);
+    moveText.setCharacterSize(16);
+    moveText.setFillColor(sf::Color::White);
+    moveText.setString(move);
+    moveText.setPosition(680, 40 + moveLogTexts.size() * 20);
+
+    moveLogTexts.push_back(moveText);
+    moveHistory.push_back(move);
+}
+
+void Game::drawMoveHistory(sf::RenderWindow& window) {
+    const int maxVisible = 25; // show only last 25 moves
+    int totalMoves = moveLogTexts.size();
+    int startIndex = totalMoves > maxVisible ? totalMoves - maxVisible : 0;
+
+    for (int i = startIndex; i < totalMoves; ++i) {
+        sf::Text text = moveLogTexts[i];
+        text.setPosition(680, 40 + (i - startIndex) * 20); // reposition so it fits screen
+        window.draw(text);
+    }
+}
+int getPieceValue(PieceType type) {
+    switch (type) {
+        case PAWN: return 1;
+        case KNIGHT:
+        case BISHOP: return 3;
+        case ROOK: return 5;
+        case QUEEN: return 9;
+        case KING: return 100;
+        default: return 0;
+    }
+}
+
+void Game::makeAIMove() {
+    struct Move {
+        int sx, sy, dx, dy;
+        int score;
+    };
+
+    std::vector<Move> allMoves;
+
+    for (int sy = 0; sy < 8; ++sy) {
+        for (int sx = 0; sx < 8; ++sx) {
+            Piece* piece = board[sy][sx];
+            if (piece && piece->color == BLACK) {
+                for (int dy = 0; dy < 8; ++dy) {
+                    for (int dx = 0; dx < 8; ++dx) {
+                        if (isMoveLegal(piece, sx, sy, dx, dy)) {
+                            Piece* target = board[dy][dx];
+                            int score = 0;
+
+                            if (target) {
+                                score = getPieceValue(target->type); // prioritize captures
+                            }
+
+                            allMoves.push_back({sx, sy, dx, dy, score});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (allMoves.empty()) return;
+
+    // Pick the highest scoring move
+    Move best = allMoves[0];
+    for (auto& m : allMoves) {
+        if (m.score > best.score)
+            best = m;
+    }
+
+    // Execute best move
+    Piece* piece = board[best.sy][best.sx];
+    Piece* captured = board[best.dy][best.dx];
+    delete captured;
+    board[best.dy][best.dx] = piece;
+    board[best.sy][best.sx] = nullptr;
+    piece->hasMoved = true;
+
+    addMoveToHistory(best.sx, best.sy, best.dx, best.dy, piece);
+
+    // Promote pawns automatically
+    if (piece->type == PAWN && (best.dy == 0 || best.dy == 7)) {
+        board[best.dy][best.dx] = new Queen(BLACK, textureMap["black_queen"]);
+    }
+
+    if (isCheckmate(WHITE)) {
+        gameOver = true;
+    }
+
+    switchTurn();
 }
 
 
