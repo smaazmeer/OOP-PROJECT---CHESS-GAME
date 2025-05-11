@@ -80,11 +80,14 @@ void Game::initializeBoard() {
     }
 }
 
-void Game::drawBoard(sf::RenderWindow& window) {
+void Game::drawBoard(sf::RenderWindow& window, bool flip) {
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
+            int drawX = flip ? 7 - x : x;
+            int drawY = flip ? 7 - y : y;
+
             sf::RectangleShape square(sf::Vector2f(80, 80));
-            square.setPosition(x * 80, y * 80);
+            square.setPosition(drawX * 80, drawY * 80);
             bool isLight = (x + y) % 2 == 0;
             square.setFillColor(isLight ? sf::Color(240, 217, 181) : sf::Color(181, 136, 99));
             window.draw(square);
@@ -92,19 +95,19 @@ void Game::drawBoard(sf::RenderWindow& window) {
     }
 }
 
-void Game::drawPieces(sf::RenderWindow& window) {
+
+
+void Game::drawPieces(sf::RenderWindow& window, bool flip) {
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
             Piece* piece = board[y][x];
-            if (piece != nullptr) {
-                // Set the position of the piece sprite
-                piece->sprite.setPosition(x * 80, y * 80);
-                
-                // Scale the sprite to fit within the square
-                piece->sprite.setScale(80.0f / piece->sprite.getTexture()->getSize().x, 
+            if (piece) {
+                int drawX = flip ? 7 - x : x;
+                int drawY = flip ? 7 - y : y;
+
+                piece->sprite.setPosition(drawX * 80, drawY * 80);
+                piece->sprite.setScale(80.0f / piece->sprite.getTexture()->getSize().x,
                                        80.0f / piece->sprite.getTexture()->getSize().y);
-                
-                // Draw the piece
                 window.draw(piece->sprite);
             }
         }
@@ -112,14 +115,20 @@ void Game::drawPieces(sf::RenderWindow& window) {
 }
 
 
-void Game::drawHighlights(sf::RenderWindow& window) {
+
+
+void Game::drawHighlights(sf::RenderWindow& window, bool flip) {
     for (auto& pos : legalMoves) {
+        int drawX = flip ? 7 - pos.x : pos.x;
+        int drawY = flip ? 7 - pos.y : pos.y;
+
         sf::CircleShape highlight(15);
         highlight.setFillColor(sf::Color(0, 255, 0, 150));
-        highlight.setPosition(pos.x * 80 + 32, pos.y * 80 + 32);
+        highlight.setPosition(drawX * 80 + 32, drawY * 80 + 32);
         window.draw(highlight);
     }
 }
+
 
 bool Game::handleClick(int x, int y) {
     if (awaitingPromotion || gameOver) return false;
@@ -351,6 +360,23 @@ int getPieceValue(PieceType type) {
         case KING: return 100;
         default: return 0;
     }
+}
+void Game::reset() {
+    // Delete existing pieces
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x) {
+            delete board[y][x];
+            board[y][x] = nullptr;
+        }
+
+    // Reinitialize board and states
+    initializeBoard();
+    currentTurn = WHITE;
+    awaitingPromotion = false;
+    gameOver = false;
+    legalMoves.clear();
+    moveLogTexts.clear();
+    moveHistory.clear();
 }
 
 void Game::makeAIMove() {
