@@ -31,9 +31,11 @@ public:
     void makeAIMove();
     void loadTextures();
     void drawMoveHistory(sf::RenderWindow& window);
-    void drawBoard(sf::RenderWindow& window);
-    void drawPieces(sf::RenderWindow& window);
-    void drawHighlights(sf::RenderWindow& window);
+    void drawBoard(sf::RenderWindow& window, bool flip = false);
+void drawPieces(sf::RenderWindow& window, bool flip = false);
+void drawHighlights(sf::RenderWindow& window, bool flip = false);
+void reset();
+
     void drawPromotion(sf::RenderWindow& window);
     void drawGameOver(sf::RenderWindow& window);
 
