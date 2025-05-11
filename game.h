@@ -16,19 +16,31 @@ private:
     sf::Text promotionText;
     bool awaitingPromotion;
     sf::Vector2i promotionPos;
+    bool gameOver;
+    sf::Text gameOverText;
+    std::vector<std::string> moveHistory;
+    std::vector<sf::Text> moveLogTexts;
+    sf::Font logFont;
+
+    std::string positionToChessNotation(int x, int y);
+    void addMoveToHistory(int sx, int sy, int dx, int dy, Piece* movedPiece);
 
 public:
     Game();
     ~Game();
+    void makeAIMove();
     void loadTextures();
+    void drawMoveHistory(sf::RenderWindow& window);
     void drawBoard(sf::RenderWindow& window);
     void drawPieces(sf::RenderWindow& window);
     void drawHighlights(sf::RenderWindow& window);
     void drawPromotion(sf::RenderWindow& window);
+    void drawGameOver(sf::RenderWindow& window);
 
     void initializeBoard();
-    void handleClick(int x, int y);
+    bool handleClick(int x, int y);
     bool isMoveLegal(Piece* selected, int sx, int sy, int dx, int dy);
+    bool isKingInCheck(Color c);  // ?? removed const
     bool isPathClear(int sx, int sy, int dx, int dy);
 
     void switchTurn();
@@ -42,6 +54,13 @@ public:
     void promotePawn(Color color, int x, int y, char choice);
     bool isAwaitingPromotion() const;
     void handlePromotionInput(char choice);
+    bool isCheckmate(Color color);
+
+    Color getCurrentTurn() const;
+    void setGameOver(bool over);
+    bool isGameOver() const;
+
+    bool wasLastMoveCheckmate();
 };
 
 #endif
