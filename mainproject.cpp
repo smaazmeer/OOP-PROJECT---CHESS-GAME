@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sstream>
 
-enum GameState { MENU, MODE_SELECT, TIMER_SELECT, PLAY };
+enum GameState { MENU, MODE_SELECT, TIMER_SELECT, PLAY, PAUSED, PAUSE_MENU };
 enum PlayerMode { NONE, VS_PLAYER, VS_AI };
 
 std::pair<sf::RectangleShape, sf::Text> createButton(
@@ -49,6 +49,7 @@ int main() {
     GameState state = MENU;
     PlayerMode mode = NONE;
     Game game;
+    bool boardFlipped = false;
 
     sf::Font font;
     font.loadFromFile("arial.ttf");
@@ -78,6 +79,14 @@ int main() {
     auto timer10Pair = createButton({250, 60}, {275, 200}, "10 MIN TIMER", 24, font);
     auto timer5Pair = createButton({250, 60}, {275, 300}, "5 MIN TIMER", 24, font);
     auto backPair = createButton({100, 40}, {20, 580}, "BACK", 20, font);
+    auto flipBoardTogglePair = createButton({250, 60}, {275, 400}, "TOGGLE FLIP BOARD", 24, font);
+    bool flipEnabled = false;
+    auto resumePair = createButton({250, 60}, {275, 200}, "RESUME", 24, font);
+    auto rematchPair = createButton({250, 60}, {275, 280}, "REMATCH", 24, font);
+    auto mainMenuPair = createButton({250, 60}, {275, 360}, "MAIN MENU", 24, font);
+
+
+
 
     // Timers
     sf::Time player1Time, player2Time;
@@ -132,6 +141,10 @@ int main() {
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
+        	if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape && state == PLAY && !game.isGameOver()) {
+         state = PAUSE_MENU;
+          }
+
             if (event.type == sf::Event::Closed)
                 window.close();
 
@@ -160,16 +173,49 @@ int main() {
                         player2Time = sf::seconds(300);
                         turnClock.restart();
                         state = PLAY;
-                    } else if (backPair.first.getGlobalBounds().contains(mx, my)) {
+                    }
+
+					
+ else if (backPair.first.getGlobalBounds().contains(mx, my)) {
                         state = MODE_SELECT;
                     }
-                } else if (state == PLAY && !game.isAwaitingPromotion() && !game.isCheckmate(WHITE) && !game.isCheckmate(BLACK)) {
+                     else if (flipBoardTogglePair.first.getGlobalBounds().contains(mx, my)) {
+        flipEnabled = !flipEnabled;
+        flipBoardTogglePair.second.setString(flipEnabled ? "FLIP: ON" : "FLIP: OFF");
+    }
+                } 
+                else if (state == PAUSE_MENU) {
+    if (resumePair.first.getGlobalBounds().contains(mx, my)) {
+        state = PLAY;
+    }
+    else if (rematchPair.first.getGlobalBounds().contains(mx, my)) {
+        game.reset();//reset game
+        player1Time = sf::seconds(600);  // Or your stored time
+        player2Time = sf::seconds(600);
+        winnerText.setString("");
+        state = PLAY;
+    }
+    else if (mainMenuPair.first.getGlobalBounds().contains(mx, my)) {
+        game.reset();
+        winnerText.setString("");
+        state = MENU;
+    }
+}
+
+				else if (state == PLAY && !game.isAwaitingPromotion() && !game.isCheckmate(WHITE) && !game.isCheckmate(BLACK)) {
                     int before = 0, after = 0;
                     for (int y = 0; y < 8; y++)
                         for (int x = 0; x < 8; x++)
                             if (game.getPiece(x, y)) before++;
 
-                    bool moveMade = game.handleClick(mx / 80, my / 80);
+int boardX = mx / 80;
+int boardY = my / 80;
+if (boardFlipped) {  
+    boardX = 7 - boardX;
+    boardY = 7 - boardY;
+}
+bool moveMade = game.handleClick(boardX, boardY);
+
 
                     for (int y = 0; y < 8; y++)
                         for (int x = 0; x < 8; x++)
@@ -181,14 +227,20 @@ int main() {
                         else
                             moveSound.play();
 
-                       if (game.isGameOver()) {
+                      if (game.isGameOver()) {
     checkmateSound.play();
-    if (mode == VS_AI) {
-        winnerText.setString(game.getCurrentTurn() == WHITE ? "AI Wins!" : "Player Wins!");
-    } else {
-        winnerText.setString(game.getCurrentTurn() == WHITE ? "Black Wins!" : "White Wins!");
-    }
+    std::string result = (mode == VS_AI)
+        ? (game.getCurrentTurn() == WHITE ? "AI Wins!" : "Player Wins!")
+        : (game.getCurrentTurn() == WHITE ? "Black Wins!" : "White Wins!");
+
+    winnerText.setString(result);
+
+    // Center the winnerText for the pause menu box
+    sf::FloatRect bounds = winnerText.getLocalBounds();
+    winnerText.setOrigin(bounds.width / 2, bounds.height / 2);
+    winnerText.setPosition(400, 150); // Centered inside the winner box
 }
+
 						else if (game.isKingInCheck(game.getCurrentTurn())) {
                         checkSound.play();				
                             }
@@ -199,6 +251,10 @@ int main() {
                         game.makeAIMove();
                         turnClock.restart();
 }
+if (flipEnabled) {
+    boardFlipped = (game.getCurrentTurn() == BLACK); // flip when it's Black's turn
+}
+
 
                     }
                 }
@@ -250,14 +306,23 @@ int main() {
         } else if (state == MODE_SELECT) {
             window.draw(twoPair.first); window.draw(twoPair.second);
             window.draw(aiPair.first);  window.draw(aiPair.second);
-        } else if (state == TIMER_SELECT) {
-            window.draw(timer10Pair.first); window.draw(timer10Pair.second);
-            window.draw(timer5Pair.first);  window.draw(timer5Pair.second);
-            window.draw(backPair.first);    window.draw(backPair.second);
+        } 
+		else if (state == TIMER_SELECT) {
+           window.draw(timer10Pair.first); window.draw(timer10Pair.second);
+           window.draw(timer5Pair.first);  window.draw(timer5Pair.second);
+           window.draw(backPair.first);    window.draw(backPair.second);
+
+            if (mode == VS_PLAYER) {
+             window.draw(flipBoardTogglePair.first);
+             window.draw(flipBoardTogglePair.second);
+          }
+
         } else if (state == PLAY) {
-            game.drawBoard(window);
-            game.drawHighlights(window);
-            game.drawPieces(window);
+          game.drawBoard(window, boardFlipped);
+          game.drawHighlights(window, boardFlipped);
+          game.drawPieces(window, boardFlipped);
+
+
 			game.drawMoveHistory(window);
 
             window.draw(timerBlackBox); window.draw(timerBlack);
@@ -271,9 +336,51 @@ int main() {
 
             if (game.isGameOver()) {
     window.draw(winnerText); // ? use only this
+      state = PAUSE_MENU;
+    
 }
 
         }
+        else if (state == PAUSE_MENU) {
+        	
+    game.drawBoard(window);
+    game.drawPieces(window);
+    game.drawHighlights(window);
+    game.drawMoveHistory(window);
+
+    window.draw(timerBlackBox); window.draw(timerBlack);
+    window.draw(timerWhiteBox); window.draw(timerWhite);
+
+    if (game.isAwaitingPromotion()) {
+        window.draw(promotionBox);
+        window.draw(promotionTitle);
+        window.draw(promotionKeys);
+    }
+    if (game.isGameOver()) {
+    sf::RectangleShape winnerBox({300, 60});
+    winnerBox.setFillColor(sf::Color(50, 50, 50, 220));
+    winnerBox.setOutlineColor(sf::Color::White);
+    winnerBox.setOutlineThickness(2);
+    winnerBox.setPosition(250, 120); // centered above the RESUME button
+    window.draw(winnerBox);
+
+    sf::FloatRect bounds = winnerText.getLocalBounds();
+    winnerText.setOrigin(bounds.width / 2, bounds.height / 2);
+    winnerText.setPosition(400, 150); // center inside winner box
+
+    window.draw(winnerText);
+}
+
+      
+        window.draw(winnerText); 
+    
+
+    window.draw(resumePair.first); window.draw(resumePair.second);
+window.draw(rematchPair.first); window.draw(rematchPair.second);
+window.draw(mainMenuPair.first); window.draw(mainMenuPair.second);
+
+}
+
 
         window.display();
     }
