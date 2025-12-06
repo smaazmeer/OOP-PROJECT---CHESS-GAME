@@ -3,7 +3,7 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
-
+using namespace std;
 Game::Game() {
     currentTurn = WHITE;
     awaitingPromotion = false;
@@ -39,11 +39,11 @@ Game::~Game() {
 }
 
 void Game::loadTextures() {
-    std::string names[] = { "king", "queen", "rook", "bishop", "knight", "pawn" };
-    std::string colors[] = { "white", "black" };
+    string names[] = { "king", "queen", "rook", "bishop", "knight", "pawn" };
+    string colors[] = { "white", "black" };
     for (const auto& color : colors) {
         for (const auto& name : names) {
-            std::string file = "images/" + color + "_" + name + ".png";
+            string file = "images/" + color + "_" + name + ".png";
             sf::Texture tex;
             tex.loadFromFile(file);
             textureMap[color + "_" + name] = tex;
@@ -66,17 +66,17 @@ void Game::initializeBoard() {
         int back = backRows[i];
         int pawn = pawnRows[i];
 
-        board[back][0] = new Rook(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_rook")]);
-        board[back][1] = new Knight(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_knight")]);
-        board[back][2] = new Bishop(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_bishop")]);
-        board[back][3] = new Queen(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_queen")]);
-        board[back][4] = new King(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_king")]);
-        board[back][5] = new Bishop(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_bishop")]);
-        board[back][6] = new Knight(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_knight")]);
-        board[back][7] = new Rook(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_rook")]);
+        board[back][0] = new Rook(c, textureMap[(c == WHITE ? "white" : "black") + string("_rook")]);
+        board[back][1] = new Knight(c, textureMap[(c == WHITE ? "white" : "black") + string("_knight")]);
+        board[back][2] = new Bishop(c, textureMap[(c == WHITE ? "white" : "black") + string("_bishop")]);
+        board[back][3] = new Queen(c, textureMap[(c == WHITE ? "white" : "black") + string("_queen")]);
+        board[back][4] = new King(c, textureMap[(c == WHITE ? "white" : "black") + string("_king")]);
+        board[back][5] = new Bishop(c, textureMap[(c == WHITE ? "white" : "black") + string("_bishop")]);
+        board[back][6] = new Knight(c, textureMap[(c == WHITE ? "white" : "black") + string("_knight")]);
+        board[back][7] = new Rook(c, textureMap[(c == WHITE ? "white" : "black") + string("_rook")]);
 
         for (int x = 0; x < 8; ++x)
-            board[pawn][x] = new Pawn(c, textureMap[(c == WHITE ? "white" : "black") + std::string("_pawn")]);
+            board[pawn][x] = new Pawn(c, textureMap[(c == WHITE ? "white" : "black") + string("_pawn")]);
     }
 }
 
@@ -135,7 +135,7 @@ bool Game::handleClick(int x, int y) {
 
     static bool selected = false;
     static int sx, sy;
-
+//piece checking 
     if (!selected) {
         Piece* piece = board[y][x];
         if (piece && piece->color == currentTurn) {
@@ -143,11 +143,11 @@ bool Game::handleClick(int x, int y) {
             sx = x;
             sy = y;
             legalMoves.clear();
-
+//piece legal move
             for (int dy = 0; dy < 8; ++dy)
                 for (int dx = 0; dx < 8; ++dx)
                     if (piece->isValidMove(sx, sy, dx, dy, board))
-                        legalMoves.push_back({ dx, dy });
+                        legalMoves.push_back({ dx, dy });			
         }
     } else {
         Piece* piece = board[sy][sx];
@@ -157,6 +157,7 @@ bool Game::handleClick(int x, int y) {
             board[y][x] = piece;
             board[sy][sx] = nullptr;
             piece->hasMoved = true;
+            //castling 
             if (piece->type == KING && std::abs(x - sx) == 2) {
     int rookFromX = (x > sx) ? 7 : 0;
     int rookToX = (x > sx) ? x - 1 : x + 1;
@@ -196,7 +197,9 @@ bool Game::handleClick(int x, int y) {
 bool Game::isMoveLegal(Piece* selected, int sx, int sy, int dx, int dy) {
     if (!selected) return false;
     Piece* dest = board[dy][dx];
+    //dont take own pieces
     if (dest && dest->color == selected->color) return false;
+    
     if (!selected->isValidMove(sx, sy, dx, dy, board)) return false;
 
     // --- Begin temporary simulation ---
@@ -205,7 +208,7 @@ bool Game::isMoveLegal(Piece* selected, int sx, int sy, int dx, int dy) {
     board[sy][sx] = nullptr;
 
     bool inCheck = isKingInCheck(currentTurn);
-
+	
     // Revert
     board[sy][sx] = selected;
     board[dy][dx] = temp;
@@ -315,17 +318,17 @@ Color Game::getCurrentTurn() const { return currentTurn; }
 void Game::setGameOver(bool over) { gameOver = over; }
 bool Game::isGameOver() const { return gameOver; }
 bool Game::wasLastMoveCheckmate() {
-    return gameOver && !isKingInCheck(currentTurn); // gameOver triggered without check? then it's checkmate
+    return gameOver && !isKingInCheck(currentTurn); // gameOrver triggered without check? then it's checkmate
 }
 
-std::string Game::positionToChessNotation(int x, int y) {
+string Game::positionToChessNotation(int x, int y) {
     char file = 'a' + x;
     char rank = '8' - y;
-    return std::string(1, file) + std::string(1, rank);
+    return string(1, file) + string(1, rank);
 }
 
 void Game::addMoveToHistory(int sx, int sy, int dx, int dy, Piece* movedPiece) {
-    std::string move = (currentTurn == WHITE ? "White: " : "Black: ");
+    string move = (currentTurn == WHITE ? "White: " : "Black: ");
     move += positionToChessNotation(sx, sy) + " ? " + positionToChessNotation(dx, dy);
     
     sf::Text moveText;
@@ -353,7 +356,7 @@ void Game::drawMoveHistory(sf::RenderWindow& window) {
 int getPieceValue(PieceType type) {
     switch (type) {
         case PAWN: return 1;
-        case KNIGHT:
+        case KNIGHT: return 4;
         case BISHOP: return 3;
         case ROOK: return 5;
         case QUEEN: return 9;
@@ -385,7 +388,7 @@ void Game::makeAIMove() {
         int score;
     };
 
-    std::vector<Move> allMoves;
+    vector<Move> allMoves;
 
     for (int sy = 0; sy < 8; ++sy) {
         for (int sx = 0; sx < 8; ++sx) {
