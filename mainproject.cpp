@@ -3,11 +3,12 @@
 #include "Game.h"
 #include <iostream>
 #include <sstream>
+using namespace std;
 
 enum GameState { MENU, MODE_SELECT, TIMER_SELECT, PLAY, PAUSED, PAUSE_MENU };
 enum PlayerMode { NONE, VS_PLAYER, VS_AI };
 
-std::pair<sf::RectangleShape, sf::Text> createButton(
+pair<sf::RectangleShape, sf::Text> createButton(
     sf::Vector2f size,
     sf::Vector2f pos,
     const std::string& label,
@@ -30,14 +31,14 @@ std::pair<sf::RectangleShape, sf::Text> createButton(
     text.setOrigin(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
     text.setPosition(pos.x + size.x / 2, pos.y + size.y / 2);
 
-    return std::make_pair(button, text);
+    return make_pair(button, text);
 }
 
-std::string formatTime(sf::Time time) {
+string formatTime(sf::Time time) {
     int seconds = static_cast<int>(time.asSeconds());
     int mins = seconds / 60;
     int secs = seconds % 60;
-    std::ostringstream ss;
+    ostringstream ss;
     ss << (mins < 10 ? "0" : "") << mins << ":" << (secs < 10 ? "0" : "") << secs;
     return ss.str();
 }
@@ -229,7 +230,7 @@ bool moveMade = game.handleClick(boardX, boardY);
 
                       if (game.isGameOver()) {
     checkmateSound.play();
-    std::string result = (mode == VS_AI)
+    string result = (mode == VS_AI)
         ? (game.getCurrentTurn() == WHITE ? "AI Wins!" : "Player Wins!")
         : (game.getCurrentTurn() == WHITE ? "Black Wins!" : "White Wins!");
 
@@ -335,7 +336,7 @@ if (flipEnabled) {
             }
 
             if (game.isGameOver()) {
-    window.draw(winnerText); // ? use only this
+    window.draw(winnerText); 
       state = PAUSE_MENU;
     
 }
@@ -361,7 +362,7 @@ if (flipEnabled) {
     winnerBox.setFillColor(sf::Color(50, 50, 50, 220));
     winnerBox.setOutlineColor(sf::Color::White);
     winnerBox.setOutlineThickness(2);
-    winnerBox.setPosition(250, 120); // centered above the RESUME button
+    winnerBox.setPosition(250, 120); 
     window.draw(winnerBox);
 
     sf::FloatRect bounds = winnerText.getLocalBounds();
