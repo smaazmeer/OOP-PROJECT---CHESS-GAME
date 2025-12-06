@@ -4,14 +4,15 @@
 #include "pieces.h"
 #include <SFML/Graphics.hpp>
 #include <map>
+using namespace std;
 
 class Game {
 private:
     Piece* board[8][8];
     Color currentTurn;
     sf::Texture textures[12];
-    std::map<std::string, sf::Texture> textureMap;
-    std::vector<sf::Vector2i> legalMoves;
+    map<std::string, sf::Texture> textureMap;
+    vector<sf::Vector2i> legalMoves;
     sf::Font font;
     sf::Text promotionText;
     bool awaitingPromotion;
